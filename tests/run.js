@@ -1,0 +1,9 @@
+import {initial,status,validPaths,step,hint} from '../engine.js';
+export async function run(){
+ const puzzles=await fetch('../data/puzzles.json').then(r=>r.json()),solutions=await fetch('../data/solutions.json').then(r=>r.json());let checks=0;
+ const assert=(value,label)=>{if(!value)throw Error(label);checks++};
+ for(const p of puzzles){const solution=solutions[p.id];assert(validPaths(p,solution),`valid ${p.id}`);assert(status(p,solution).clear,`clear ${p.id}`);assert(new Set(solution.flat()).size===p.size**2,`cover ${p.id}`);const paths=initial(p);for(let k=0;k<paths.length;k++){paths[k]=[solution[k][0]];for(const c of solution[k].slice(1))assert(step(p,paths,k,c),'draw solution');}assert(status(p,paths).clear,'drawn clear');const before=structuredClone(paths);let k=paths.findIndex(l=>l.length>2);paths[k].pop();assert(!status(p,paths).clear,'incomplete');assert(hint(p,paths,solution).k===k,'consistent hint');paths[k]=[solution[k][0]];assert(!step(p,paths,k,p.pairs[(k+1)%paths.length][0]),'other endpoint collision');assert(JSON.stringify(before)===JSON.stringify(solution),'snapshot independent');}
+ const p={size:3,pairs:[[0,2],[6,8]]},paths=[[0,1,2],[6,7,8]];assert(status(p,paths).connected===2&&!status(p,paths).clear,'connected with blanks not clear');assert(!validPaths(p,[[0,1,2],[6,3,0,1,4,5,8]]),'overlap rejected');assert(!validPaths(p,[[0,4,2],[6,7,8]]),'diagonal rejected');const line=[[0,1],[]];assert(step(p,line,0,0)&&line[0].length===1,'backtrack');assert(!step(p,line,0,4),'diagonal movement blocked');assert(!step(p,paths,0,5),'completed line cannot branch');
+ assert(hint(p,[[0,3],[]],[[0,1,2],[6,7,8]]).error,'contradictory hint');assert(!step(p,[[0,1],[6,3,4]],0,4),'other line collision');assert(hint(p,[[2,1],[]],[[0,1,2],[6,7,8]]).to===0,'reverse hint');
+ return {checks,puzzles:10};
+}

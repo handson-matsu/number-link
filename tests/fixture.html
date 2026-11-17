@@ -1,0 +1,7 @@
+<!doctype html><meta charset="utf-8"><script>
+// Use the real app without sending synthetic gameplay visits to the production GAS.
+fetch('../index.html').then(r=>r.text()).then(html=>{
+ const mock=`<script>window.accessRequests=[];const realFetch=window.fetch.bind(window);window.fetch=(url,options)=>{if(new URL(url,location.href).hostname==='script.google.com'){window.accessRequests.push({url:String(url),options});return Promise.reject(new TypeError('Simulated offline GAS'))}return realFetch(url,options)};<\/script>`;
+ document.open();document.write(html.replace('<head>','<head><base href="../">').replace('<script type="module" src="app.js">',mock+'<script type="module" src="app.js">'));document.close();
+});
+</script>

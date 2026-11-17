@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "solutions": 1,
+    "nodes": 30
+  },
+  {
+    "id": 2,
+    "solutions": 1,
+    "nodes": 43
+  },
+  {
+    "id": 3,
+    "solutions": 1,
+    "nodes": 72
+  },
+  {
+    "id": 4,
+    "solutions": 1,
+    "nodes": 149
+  },
+  {
+    "id": 5,
+    "solutions": 1,
+    "nodes": 230
+  },
+  {
+    "id": 6,
+    "solutions": 1,
+    "nodes": 449
+  },
+  {
+    "id": 7,
+    "solutions": 1,
+    "nodes": 674
+  },
+  {
+    "id": 8,
+    "solutions": 1,
+    "nodes": 389
+  },
+  {
+    "id": 9,
+    "solutions": 1,
+    "nodes": 944
+  },
+  {
+    "id": 10,
+    "solutions": 1,
+    "nodes": 2100
+  }
+]

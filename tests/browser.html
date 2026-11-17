@@ -1,0 +1,30 @@
+<!doctype html><meta charset="utf-8"><title>Numberlink tests</title><pre id="results">Running…</pre><iframe id="app" src="fixture.html" style="width:390px;height:1000px;border:1px solid"></iframe><script type="module">
+import {run} from './run.js';
+const output=document.querySelector('#results');
+const savedRecord=localStorage.getItem('numberlink-cleared');
+try {
+ const result=await run();let checks=result.checks;const frame=document.querySelector('iframe');await new Promise(resolve=>{const poll=()=>frame.contentDocument.querySelectorAll('.endpoint').length?resolve():setTimeout(poll,50);poll()});const w=frame.contentWindow,d=frame.contentDocument;
+ const assert=(value,label)=>{if(!value)throw Error(label);checks++};
+ assert(w.accessRequests.length===1,'one initial access attempt');
+ const puzzles=await fetch('../data/puzzles.json').then(r=>r.json()),solutions=await fetch('../data/solutions.json').then(r=>r.json());
+ function event(type,c,p,pointerType='mouse'){const board=d.querySelector('#board'),r=board.getBoundingClientRect();board.dispatchEvent(new w.PointerEvent(type,{bubbles:true,pointerId:7,pointerType,button:0,clientX:r.left+(c%p.size+.5)*r.width/p.size,clientY:r.top+(Math.floor(c/p.size)+.5)*r.height/p.size}));}
+ // Synthetic pointer IDs cannot acquire native capture. Stub only capture; production handlers remain intact.
+ d.querySelector('#board').setPointerCapture=()=>{};
+ for(const p of puzzles){d.querySelectorAll('.puzzle-choice')[p.id-1].click();assert(d.querySelectorAll('polyline').length===0,'switch clean');assert(d.querySelector('#celebration').hidden,'no premature celebration');assert(!d.querySelector('#usage')&&!d.querySelector('#bar'),'no usage display');for(const path of solutions[p.id]){event('pointerdown',path[0],p,p.id%2?'mouse':'touch');for(const c of path.slice(1,-1))event('pointermove',c,p,p.id%2?'mouse':'touch');event('pointerup',path.at(-1),p,p.id%2?'mouse':'touch');const connected=d.querySelector('#connections').textContent;event('pointercancel',path.at(-1),p);event('lostpointercapture',path.at(-1),p);event('pointerup',path.at(-1),p);assert(d.querySelector('#connections').textContent===connected,'committed line survives delayed events');}assert(d.querySelector('#message').textContent.startsWith('クリア！'),`UI solve ${p.id}`);assert(!d.querySelector('#celebration').hidden,'clear celebration');assert(d.querySelector('#next').classList.contains('next-ready')===(p.id<10),'clear next button');d.querySelector('#undo').click();assert(!d.querySelector('#message').textContent.startsWith('クリア！'),'undo clear');assert(d.querySelector('#celebration').hidden,'undo hides celebration');d.querySelector('#reset').click();assert(d.querySelectorAll('polyline').length===0,'reset');d.querySelector('#undo').click();assert(d.querySelectorAll('polyline').length>0,'undo reset');}
+ d.querySelectorAll('.puzzle-choice')[0].click();d.querySelector('#hint').click();assert(d.querySelector('#message').textContent.includes('1マス'),'hint');const p=puzzles[0],line=solutions[1][0];event('pointerdown',line[0],p,'touch');event('pointermove',line[1],p,'touch');event('pointercancel',line[1],p,'touch');assert(d.querySelectorAll('polyline').length===0,'touch cancel rollback');
+ for(const type of ['mouse','touch']){event('pointerdown',line[0],p,type);for(const c of line.slice(1))event('pointermove',c,p,type);assert(d.querySelector('#connections').textContent.startsWith('1 /'),'endpoint commits before release');event('pointermove',line[1],p,type);event('pointercancel',line.at(-1),p,type);event('lostpointercapture',line.at(-1),p,type);assert(d.querySelector('#connections').textContent.startsWith('1 /'),'cancel after endpoint keeps line');d.querySelector('#undo').click();assert(!d.querySelector('polyline'),'single undo removes committed drag');}
+assert(d.documentElement.scrollWidth<=390,'mobile no horizontal overflow');assert(d.querySelector('#board').getBoundingClientRect().width<=390,'mobile board fit');
+ // Short-cut one solution path, leaving a hole while connecting every pair.
+ let fixture;
+ for(const puzzle of puzzles){const lines=structuredClone(solutions[puzzle.id]);for(let k=0;k<lines.length&&!fixture;k++)for(let a=0;a<lines[k].length&&!fixture;a++)for(let b=a+3;b<lines[k].length;b++){const x=lines[k][a],y=lines[k][b];if(Math.abs(x%puzzle.size-y%puzzle.size)+Math.abs(Math.floor(x/puzzle.size)-Math.floor(y/puzzle.size))===1){lines[k].splice(a+1,b-a-1);fixture={puzzle,lines};break}}if(fixture)break}
+ assert(!!fixture,'blank-cell fixture exists');
+ d.querySelectorAll('.puzzle-choice')[fixture.puzzle.id-1].click();
+ for(const path of fixture.lines){event('pointerdown',path[0],fixture.puzzle);for(const c of path.slice(1))event('pointermove',c,fixture.puzzle);event('pointerup',path.at(-1),fixture.puzzle)}
+ assert(d.querySelector('#connections').textContent===`${fixture.lines.length} / ${fixture.lines.length} ペア`,'all pairs connected with blanks');
+ assert(d.querySelector('#message').textContent==='数字はすべてつながりました。でも、まだ空白のマスがあります！','blank explanation');
+ assert(d.querySelector('#celebration').hidden&&!d.querySelector('#next').classList.contains('next-ready'),'blanks never celebrate');
+ assert(w.accessRequests.length===1,'no access logging on gameplay or failure retries');
+ output.textContent=`PASS — ${checks} assertions; all 10 puzzles solved through mouse/touch PointerEvent handlers. Undo, reset, switching, hint, cancellation, mobile layout passed.`;
+ if(savedRecord===null)localStorage.removeItem('numberlink-cleared');else localStorage.setItem('numberlink-cleared',savedRecord);
+}catch(e){output.textContent='FAIL '+e.stack;throw e}finally{if(savedRecord===null)localStorage.removeItem('numberlink-cleared');else localStorage.setItem('numberlink-cleared',savedRecord)}
+</script>
